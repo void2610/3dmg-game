@@ -36,14 +36,6 @@ namespace Player
         private bool _leftPressed;
         private bool _rightPressed;
 
-        // いずれかのワイヤーがアクティブか
-        public bool IsAnyWireActive => _leftJoint || _rightJoint;
-
-        // 左ワイヤーのアンカー位置
-        public Vector3? LeftAnchorPoint => _leftJoint ? _leftJoint.connectedAnchor : null;
-
-        // 右ワイヤーのアンカー位置
-        public Vector3? RightAnchorPoint => _rightJoint ? _rightJoint.connectedAnchor : null;
 
         private void Update()
         {
@@ -115,7 +107,7 @@ namespace Player
 
         private Vector3 GetOriginPosition(Transform origin)
         {
-            return origin ? origin.position : transform.position;
+            return origin.position;
         }
 
         private void FireWire(ref SpringJoint joint, Transform origin)
@@ -134,10 +126,7 @@ namespace Player
                 joint.connectedAnchor = hit.point;
 
                 // ローカルアンカー（射出起点）を設定
-                if (origin)
-                {
-                    joint.anchor = transform.InverseTransformPoint(originPos);
-                }
+                joint.anchor = transform.InverseTransformPoint(originPos);
 
                 // ワイヤー長を現在の距離に設定
                 var distance = Vector3.Distance(originPos, hit.point);
@@ -159,18 +148,8 @@ namespace Player
             }
         }
 
-        public void ReleaseAll()
-        {
-            ReleaseWire(ref _leftJoint);
-            ReleaseWire(ref _rightJoint);
-            _leftPressed = false;
-            _rightPressed = false;
-        }
-
         private void UpdateWireVisual(SpringJoint joint, Transform origin, LineRenderer line)
         {
-            if (!line) return;
-
             if (!joint)
             {
                 line.enabled = false;
