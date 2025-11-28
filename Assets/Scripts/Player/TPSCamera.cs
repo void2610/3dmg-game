@@ -38,9 +38,6 @@ namespace Player
         [SerializeField] private float maxPitchOffset = 10f;
         [SerializeField] private float pitchOffsetSmoothTime = 0.2f;
 
-        [Header("ダイナミックカメラ - ラグ")]
-        [SerializeField] private float positionSmoothTime = 0.05f;
-
         private Transform _target;
         private Vector2 _lookInput;
         private float _yaw;
@@ -49,15 +46,12 @@ namespace Player
         private float _currentDistance;
         private float _currentFov;
         private float _currentPitchOffset;
-        private Vector3 _smoothedPosition;
-
         private Camera _camera;
 
         // SmoothDamp用の速度変数
         private float _distanceVelocity;
         private float _fovVelocity;
         private float _pitchOffsetVelocity;
-        private Vector3 _positionVelocity;
 
         private void Awake()
         {
@@ -136,18 +130,16 @@ namespace Player
 
         private void HandlePosition()
         {
-            // 注視点（ターゲットの位置 + 高さオフセット）をスムージング
-            var targetLookAtPoint = _target.position + Vector3.up * height;
-            _smoothedPosition = Vector3.SmoothDamp(_smoothedPosition, targetLookAtPoint, ref _positionVelocity, positionSmoothTime);
+            // 注視点（ターゲット位置 + 高さオフセット）
+            var lookAtPoint = _target.position + Vector3.up * height;
 
             // カメラの理想位置を計算（動的距離を使用）
-            var desiredPosition = _smoothedPosition - transform.forward * _currentDistance;
+            var desiredPosition = lookAtPoint - transform.forward * _currentDistance;
             // 壁との衝突判定
-            var actualDistance = CheckCollision(_smoothedPosition, desiredPosition);
+            var actualDistance = CheckCollision(lookAtPoint, desiredPosition);
 
             // 最終的なカメラ位置
-            var targetPosition = _smoothedPosition - transform.forward * actualDistance;
-            transform.position = targetPosition;
+            transform.position = lookAtPoint - transform.forward * actualDistance;
         }
 
         private float CheckCollision(Vector3 lookAtPoint, Vector3 desiredPosition)
