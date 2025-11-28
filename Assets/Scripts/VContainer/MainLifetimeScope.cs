@@ -13,6 +13,7 @@ public class MainLifetimeScope : LifetimeScope
         // シーン内のMonoBehaviourを登録
         builder.RegisterComponentInHierarchy<PlayerController>();
         builder.RegisterComponentInHierarchy<TpsCamera>();
+        builder.RegisterComponentInHierarchy<GrapplingHook>();
 
         // Player↔Camera間の調停を行うCoordinator
         builder.RegisterEntryPoint<PlayerCameraCoordinator>();

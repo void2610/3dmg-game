@@ -4,16 +4,20 @@ using UnityEngine.InputSystem;
 namespace Player
 {
     /// <summary>
-    /// TPSキャラクターコントローラー
+    /// RigidbodyベースのTPSキャラクターコントローラー
     /// カメラ相対移動でキャラクターを操作する
     /// </summary>
-    [RequireComponent(typeof(CharacterController))]
+    [RequireComponent(typeof(Rigidbody))]
     public class PlayerController : MonoBehaviour
     {
         [Header("移動設定")]
-        [SerializeField] private float moveSpeed = 4.0f;
+        [SerializeField] private float moveSpeed = 6.0f;
         [SerializeField] private float rotationSpeed = 10.0f;
-        [SerializeField] private float gravity = -9.81f;
+
+        [Header("接地判定")]
+        [SerializeField] private float groundCheckRadius = 0.3f;
+        [SerializeField] private float groundCheckDistance = 0.2f;
+        [SerializeField] private LayerMask groundLayers = ~0;
 
         [Header("参照")]
         [SerializeField] private Animator animator;
@@ -23,20 +27,20 @@ namespace Player
         private Vector3 _cameraRight;
 
         // コンポーネント
-        private CharacterController _characterController;
+        private Rigidbody _rb;
 
         // 入力値
         private Vector2 _moveInput;
-
-        // 内部状態
-        private Vector3 _velocity;
 
         // Animatorパラメータ名
         private static readonly int SpeedParam = Animator.StringToHash("Speed");
 
         private void Awake()
         {
-            _characterController = GetComponent<CharacterController>();
+            _rb = GetComponent<Rigidbody>();
+
+            // Rigidbody設定（回転を固定）
+            _rb.constraints = RigidbodyConstraints.FreezeRotation;
 
             // Animatorが未設定の場合、子オブジェクトから取得
             if (animator == null)
@@ -54,54 +58,73 @@ namespace Player
             _cameraRight = cameraRight;
         }
 
-        private void Update()
+        private void FixedUpdate()
         {
             HandleMovement();
-            HandleGravity();
+        }
+
+        private void Update()
+        {
+            HandleRotation();
             UpdateAnimator();
         }
 
         /// <summary>
-        /// 移動処理（カメラ相対）
+        /// 接地判定
+        /// </summary>
+        private bool IsGrounded()
+        {
+            return Physics.SphereCast(
+                transform.position + Vector3.up * (groundCheckRadius + 0.1f),
+                groundCheckRadius,
+                Vector3.down,
+                out _,
+                groundCheckDistance + 0.1f,
+                groundLayers
+            );
+        }
+
+        /// <summary>
+        /// 移動処理（カメラ相対）- FixedUpdateで実行
         /// </summary>
         private void HandleMovement()
         {
-            // 入力に基づいた移動ベクトル（Coordinatorから受け取ったカメラ向きを使用）
+            // 接地中のみ移動入力を適用
+            if (!IsGrounded())
+                return;
+
+            // 入力に基づいた移動ベクトル
             var moveDirection = _cameraForward * _moveInput.y + _cameraRight * _moveInput.x;
 
-            // 移動処理
             if (moveDirection.sqrMagnitude > 0.01f)
             {
-                // キャラクターを移動方向に向ける
+                // 目標速度を設定（Y軸は維持）
+                Vector3 targetVelocity = moveDirection.normalized * moveSpeed;
+                _rb.linearVelocity = new Vector3(targetVelocity.x, _rb.linearVelocity.y, targetVelocity.z);
+            }
+            else
+            {
+                // 入力がない場合は水平速度を減衰
+                _rb.linearVelocity = new Vector3(0f, _rb.linearVelocity.y, 0f);
+            }
+        }
+
+        /// <summary>
+        /// 回転処理 - Updateで実行（滑らかな回転のため）
+        /// </summary>
+        private void HandleRotation()
+        {
+            var moveDirection = _cameraForward * _moveInput.y + _cameraRight * _moveInput.x;
+
+            if (moveDirection.sqrMagnitude > 0.01f)
+            {
                 var targetRotation = Quaternion.LookRotation(moveDirection);
                 transform.rotation = Quaternion.Slerp(
                     transform.rotation,
                     targetRotation,
                     rotationSpeed * Time.deltaTime
                 );
-
-                // 移動
-                _characterController.Move(moveDirection.normalized * (moveSpeed * Time.deltaTime));
             }
-        }
-
-        /// <summary>
-        /// 重力処理
-        /// </summary>
-        private void HandleGravity()
-        {
-            if (_characterController.isGrounded)
-            {
-                // 接地中は小さな下向き速度を維持（接地判定の安定化）
-                _velocity.y = -2f;
-            }
-            else
-            {
-                // 重力を適用
-                _velocity.y += gravity * Time.deltaTime;
-            }
-
-            _characterController.Move(_velocity * Time.deltaTime);
         }
 
         /// <summary>

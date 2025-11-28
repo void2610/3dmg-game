@@ -9,20 +9,28 @@ public class PlayerCameraCoordinator : ITickable, ILateTickable
 {
     private readonly PlayerController _player;
     private readonly TpsCamera _camera;
+    private readonly GrapplingHook _grapplingHook;
 
     // コンストラクタでDI（VContainer推奨パターン）
-    public PlayerCameraCoordinator(PlayerController player, TpsCamera camera)
+    public PlayerCameraCoordinator(PlayerController player, TpsCamera camera, GrapplingHook grapplingHook)
     {
         _player = player;
         _camera = camera;
+        _grapplingHook = grapplingHook;
     }
 
     /// <summary>
-    /// Update相当：カメラの向きをPlayerに伝達
+    /// Update相当：カメラの向きをPlayerとGrapplingHookに伝達
     /// </summary>
     public void Tick()
     {
         _player.SetMoveDirection(_camera.Forward, _camera.Right);
+
+        // グラップリングフックにエイム方向を伝達
+        if (_grapplingHook != null)
+        {
+            _grapplingHook.SetAimDirection(_camera.transform.forward);
+        }
     }
 
     /// <summary>
