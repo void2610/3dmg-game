@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.VFX;
 
 namespace Player
 {
@@ -23,8 +24,13 @@ namespace Player
 
         [Header("参照")]
         [SerializeField] private Animator animator;
+        [SerializeField] private VisualEffect boostVfx;
+
+        [Header("VFX設定")]
+        [SerializeField] private float boostVfxRate = 50f;
 
         private static readonly int _speedParam = Animator.StringToHash("Speed");
+        private static readonly int _rateParam = Shader.PropertyToID("Rate");
 
         private Vector3 _cameraForward;
         private Vector3 _cameraRight;
@@ -132,6 +138,12 @@ namespace Player
             animator.SetFloat(_speedParam, speed);
         }
 
+        private void UpdateBoostVfx()
+        {
+            var rate = _boostPressed ? boostVfxRate : 0f;
+            boostVfx.SetFloat(_rateParam, rate);
+        }
+
         private void Awake()
         {
             _rb = GetComponent<Rigidbody>();
@@ -157,6 +169,7 @@ namespace Player
         {
             HandleRotation();
             UpdateAnimator();
+            UpdateBoostVfx();
         }
     }
 }
