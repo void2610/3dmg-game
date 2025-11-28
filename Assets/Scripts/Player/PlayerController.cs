@@ -16,50 +16,30 @@ namespace Player
         [SerializeField] private float groundCheckDistance = 0.2f;
         [SerializeField] private LayerMask groundLayers = ~0;
 
+        [Header("ジャンプ/ブースト設定")]
+        [SerializeField] private float jumpForce = 8f;
+        [SerializeField] private float boostForce = 15f;
+
         [Header("参照")]
         [SerializeField] private Animator animator;
 
-        // カメラの向き（Coordinatorから毎フレーム設定される）
+        private static readonly int _speedParam = Animator.StringToHash("Speed");
+
         private Vector3 _cameraForward;
         private Vector3 _cameraRight;
-
-        // コンポーネント
         private Rigidbody _rb;
-
-        // 入力値
         private Vector2 _moveInput;
+        private bool _boostPressed;
 
-        // Animatorパラメータ名
-        private static readonly int SpeedParam = Animator.StringToHash("Speed");
-
-        private void Awake()
-        {
-            _rb = GetComponent<Rigidbody>();
-
-            // Rigidbody設定（回転を固定）
-            _rb.constraints = RigidbodyConstraints.FreezeRotation;
-
-            // Animatorが未設定の場合、子オブジェクトから取得
-            animator ??= GetComponentInChildren<Animator>();
-        }
-
-        // カメラの向きを設定（Coordinatorから毎フレーム呼ばれる）
         public void SetMoveDirection(Vector3 cameraForward, Vector3 cameraRight)
         {
             _cameraForward = cameraForward;
             _cameraRight = cameraRight;
         }
 
-        private void FixedUpdate()
-        {
-            HandleMovement();
-        }
+        public void OnMove(InputValue value) => _moveInput = value.Get<Vector2>();
 
-        private void Update()
-        {
-            HandleRotation();
-            UpdateAnimator();
-        }
+        public void OnBoost(InputValue value) => _boostPressed = value.Get<float>() > 0.5f;
 
         private bool IsGrounded()
         {
@@ -73,33 +53,55 @@ namespace Player
             );
         }
 
-        // 移動処理（カメラ相対）- FixedUpdateで実行
+        private Vector3 GetMoveDirection()
+        {
+            return _cameraForward * _moveInput.y + _cameraRight * _moveInput.x;
+        }
+
         private void HandleMovement()
         {
-            // 接地中のみ移動入力を適用
-            if (!IsGrounded())
-                return;
-
-            // 入力に基づいた移動ベクトル
-            var moveDirection = _cameraForward * _moveInput.y + _cameraRight * _moveInput.x;
+            var moveDirection = GetMoveDirection();
 
             if (moveDirection.sqrMagnitude > 0.01f)
             {
-                // 目標速度を設定（Y軸は維持）
                 var targetVelocity = moveDirection.normalized * moveSpeed;
                 _rb.linearVelocity = new Vector3(targetVelocity.x, _rb.linearVelocity.y, targetVelocity.z);
             }
             else
             {
-                // 入力がない場合は水平速度を減衰
                 _rb.linearVelocity = new Vector3(0f, _rb.linearVelocity.y, 0f);
             }
         }
 
-        // 回転処理 - Updateで実行（滑らかな回転のため）
+        private void HandleJump()
+        {
+            if (_boostPressed)
+            {
+                _rb.linearVelocity = new Vector3(_rb.linearVelocity.x, jumpForce, _rb.linearVelocity.z);
+            }
+        }
+
+        private void HandleAirBoost()
+        {
+            if (!_boostPressed) return;
+
+            var moveDirection = GetMoveDirection();
+
+            if (moveDirection.sqrMagnitude > 0.01f)
+            {
+                // WASD入力あり → その方向に加速
+                _rb.AddForce(moveDirection.normalized * boostForce, ForceMode.Acceleration);
+            }
+            else
+            {
+                // 入力なし → 上方向に加速
+                _rb.AddForce(Vector3.up * boostForce, ForceMode.Acceleration);
+            }
+        }
+
         private void HandleRotation()
         {
-            var moveDirection = _cameraForward * _moveInput.y + _cameraRight * _moveInput.x;
+            var moveDirection = GetMoveDirection();
 
             if (moveDirection.sqrMagnitude > 0.01f)
             {
@@ -114,15 +116,34 @@ namespace Player
 
         private void UpdateAnimator()
         {
-            // 移動入力の大きさを0~1でAnimatorに渡す
             var speed = _moveInput.magnitude;
-            animator.SetFloat(SpeedParam, speed);
+            animator.SetFloat(_speedParam, speed);
         }
 
-        // 移動入力のコールバック（Input System SendMessages）
-        public void OnMove(InputValue value)
+        private void Awake()
         {
-            _moveInput = value.Get<Vector2>();
+            _rb = GetComponent<Rigidbody>();
+            _rb.constraints = RigidbodyConstraints.FreezeRotation;
+            animator ??= GetComponentInChildren<Animator>();
+        }
+
+        private void FixedUpdate()
+        {
+            if (IsGrounded())
+            {
+                HandleMovement();
+                HandleJump();
+            }
+            else
+            {
+                HandleAirBoost();
+            }
+        }
+
+        private void Update()
+        {
+            HandleRotation();
+            UpdateAnimator();
         }
     }
 }
