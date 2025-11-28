@@ -8,107 +8,61 @@ namespace Player
     public class GrapplingHook : MonoBehaviour
     {
         [Header("ワイヤー射出起点")]
-        [SerializeField] private Transform leftWireOrigin;
-        [SerializeField] private Transform rightWireOrigin;
+        [SerializeField] Transform leftWireOrigin;
+        [SerializeField] Transform rightWireOrigin;
 
         [Header("ワイヤー設定")]
-        [SerializeField] private float maxRange = 50f;
-        [SerializeField] private float springForce = 500f;
-        [SerializeField] private float damper = 50f;
-        [SerializeField] private LayerMask targetLayers = ~0;
+        [SerializeField] float maxRange = 50f;
+        [SerializeField] float springForce = 500f;
+        [SerializeField] float damper = 50f;
+        [SerializeField] LayerMask targetLayers = ~0;
 
-        [SerializeField] private float reelSpeed = 5f;
-        [SerializeField] private float minDistance = 2f;
+        [SerializeField] float reelSpeed = 5f;
+        [SerializeField] float minDistance = 2f;
 
-        [SerializeField] private LineRenderer leftLineRenderer;
-        [SerializeField] private LineRenderer rightLineRenderer;
-        [SerializeField] private int lineSegments = 20;
-        [SerializeField] private float sagAmount = 0.5f;
+        [SerializeField] LineRenderer leftLineRenderer;
+        [SerializeField] LineRenderer rightLineRenderer;
+        [SerializeField] int lineSegments = 20;
+        [SerializeField] float sagAmount = 0.5f;
 
-        // 左右のジョイント
         private SpringJoint _leftJoint;
         private SpringJoint _rightJoint;
-
-        // エイム方向（カメラ前方）
         private Vector3 _aimDirection = Vector3.forward;
+        private bool _reelPressed;
 
-        // 入力状態
-        private bool _leftPressed;
-        private bool _rightPressed;
+        public void SetAimDirection(Vector3 direction) => _aimDirection = direction.normalized;
 
+        public void OnWireReel(InputValue value) => _reelPressed = value.Get<float>() > 0.5f;
 
-        private void Update()
-        {
-            // ワイヤー巻き取り
-            if (_leftJoint && _leftPressed)
-            {
-                ReelIn(_leftJoint);
-            }
-            if (_rightJoint && _rightPressed)
-            {
-                ReelIn(_rightJoint);
-            }
-        }
-
-        private void LateUpdate()
-        {
-            // ワイヤー表示更新
-            UpdateWireVisual(_leftJoint, leftWireOrigin, leftLineRenderer);
-            UpdateWireVisual(_rightJoint, rightWireOrigin, rightLineRenderer);
-        }
-
-        // エイム方向を設定（Coordinatorから呼ばれる）
-        public void SetAimDirection(Vector3 direction)
-        {
-            _aimDirection = direction.normalized;
-        }
-
-        private void ReelIn(SpringJoint joint)
-        {
-            var newMaxDistance = joint.maxDistance - reelSpeed * Time.deltaTime;
-            joint.maxDistance = Mathf.Max(newMaxDistance, minDistance);
-        }
-
-        // 左ワイヤー入力
         public void OnWireLeft(InputValue value)
         {
-            var inputValue = value.Get<float>();
-            var isPressed = inputValue > 0.5f;
+            var isPressed = value.Get<float>() > 0.5f;
 
-            if (isPressed && !_leftPressed)
+            if (isPressed)
             {
-                _leftPressed = true;
                 FireWire(ref _leftJoint, leftWireOrigin);
             }
-            else if (!isPressed && _leftPressed)
+            else
             {
-                _leftPressed = false;
                 ReleaseWire(ref _leftJoint);
             }
         }
 
-        // 右ワイヤー入力
         public void OnWireRight(InputValue value)
         {
-            var inputValue = value.Get<float>();
-            var isPressed = inputValue > 0.5f;
+            var isPressed = value.Get<float>() > 0.5f;
 
-            if (isPressed && !_rightPressed)
+            if (isPressed)
             {
-                _rightPressed = true;
                 FireWire(ref _rightJoint, rightWireOrigin);
             }
-            else if (!isPressed && _rightPressed)
+            else
             {
-                _rightPressed = false;
                 ReleaseWire(ref _rightJoint);
             }
         }
 
-        private Vector3 GetOriginPosition(Transform origin)
-        {
-            return origin.position;
-        }
+        private Vector3 GetOriginPosition(Transform origin) => origin.position;
 
         private void FireWire(ref SpringJoint joint, Transform origin)
         {
@@ -172,14 +126,33 @@ namespace Player
 
         private Vector3 CalculateCatenary(Vector3 start, Vector3 end, float t, float sag)
         {
-            // 線形補間
             var linear = Vector3.Lerp(start, end, t);
-
-            // たるみ（放物線近似: 中央が最もたるむ）
             var sagOffset = sag * Mathf.Sin(t * Mathf.PI);
-
-            // 下向きにたるませる
             return linear + Vector3.down * sagOffset;
+        }
+
+        private void ReelIn(SpringJoint joint)
+            => joint.maxDistance = Mathf.Max(joint.maxDistance - reelSpeed * Time.deltaTime, minDistance);
+
+        private void Update()
+        {
+            if (_reelPressed)
+            {
+                if (_leftJoint)
+                {
+                    ReelIn(_leftJoint);
+                }
+                if (_rightJoint)
+                {
+                    ReelIn(_rightJoint);
+                }
+            }
+        }
+
+        private void LateUpdate()
+        {
+            UpdateWireVisual(_leftJoint, leftWireOrigin, leftLineRenderer);
+            UpdateWireVisual(_rightJoint, rightWireOrigin, rightLineRenderer);
         }
     }
 }
