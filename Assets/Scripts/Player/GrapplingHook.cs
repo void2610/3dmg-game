@@ -3,10 +3,7 @@ using UnityEngine.InputSystem;
 
 namespace Player
 {
-    /// <summary>
-    /// グラップリングフック（ワイヤーアクション）
-    /// SpringJointを使用してシンプルに実装
-    /// </summary>
+    // グラップリングフック（ワイヤーアクション）- SpringJointを使用してシンプルに実装
     [RequireComponent(typeof(Rigidbody))]
     public class GrapplingHook : MonoBehaviour
     {
@@ -20,18 +17,13 @@ namespace Player
         [SerializeField] private float damper = 50f;
         [SerializeField] private LayerMask targetLayers = ~0;
 
-        [Header("巻き取り設定")]
         [SerializeField] private float reelSpeed = 5f;
         [SerializeField] private float minDistance = 2f;
 
-        [Header("ワイヤー表示")]
         [SerializeField] private LineRenderer leftLineRenderer;
         [SerializeField] private LineRenderer rightLineRenderer;
         [SerializeField] private int lineSegments = 20;
         [SerializeField] private float sagAmount = 0.5f;
-
-        // コンポーネント
-        private Rigidbody _rb;
 
         // 左右のジョイント
         private SpringJoint _leftJoint;
@@ -44,34 +36,23 @@ namespace Player
         private bool _leftPressed;
         private bool _rightPressed;
 
-        /// <summary>
-        /// いずれかのワイヤーがアクティブか
-        /// </summary>
-        public bool IsAnyWireActive => _leftJoint != null || _rightJoint != null;
+        // いずれかのワイヤーがアクティブか
+        public bool IsAnyWireActive => _leftJoint || _rightJoint;
 
-        /// <summary>
-        /// 左ワイヤーのアンカー位置
-        /// </summary>
-        public Vector3? LeftAnchorPoint => _leftJoint != null ? _leftJoint.connectedAnchor : null;
+        // 左ワイヤーのアンカー位置
+        public Vector3? LeftAnchorPoint => _leftJoint ? _leftJoint.connectedAnchor : null;
 
-        /// <summary>
-        /// 右ワイヤーのアンカー位置
-        /// </summary>
-        public Vector3? RightAnchorPoint => _rightJoint != null ? _rightJoint.connectedAnchor : null;
-
-        private void Awake()
-        {
-            _rb = GetComponent<Rigidbody>();
-        }
+        // 右ワイヤーのアンカー位置
+        public Vector3? RightAnchorPoint => _rightJoint ? _rightJoint.connectedAnchor : null;
 
         private void Update()
         {
             // ワイヤー巻き取り
-            if (_leftJoint != null && _leftPressed)
+            if (_leftJoint && _leftPressed)
             {
                 ReelIn(_leftJoint);
             }
-            if (_rightJoint != null && _rightPressed)
+            if (_rightJoint && _rightPressed)
             {
                 ReelIn(_rightJoint);
             }
@@ -84,34 +65,23 @@ namespace Player
             UpdateWireVisual(_rightJoint, rightWireOrigin, rightLineRenderer);
         }
 
-        /// <summary>
-        /// エイム方向を設定（Coordinatorから呼ばれる）
-        /// </summary>
+        // エイム方向を設定（Coordinatorから呼ばれる）
         public void SetAimDirection(Vector3 direction)
         {
             _aimDirection = direction.normalized;
         }
 
-        /// <summary>
-        /// ワイヤーを巻き取る
-        /// </summary>
         private void ReelIn(SpringJoint joint)
         {
-            if (joint == null) return;
-
-            float newMaxDistance = joint.maxDistance - reelSpeed * Time.deltaTime;
+            var newMaxDistance = joint.maxDistance - reelSpeed * Time.deltaTime;
             joint.maxDistance = Mathf.Max(newMaxDistance, minDistance);
         }
 
-        #region Input System Callbacks
-
-        /// <summary>
-        /// 左ワイヤー入力
-        /// </summary>
+        // 左ワイヤー入力
         public void OnWireLeft(InputValue value)
         {
-            float inputValue = value.Get<float>();
-            bool isPressed = inputValue > 0.5f;
+            var inputValue = value.Get<float>();
+            var isPressed = inputValue > 0.5f;
 
             if (isPressed && !_leftPressed)
             {
@@ -125,13 +95,11 @@ namespace Player
             }
         }
 
-        /// <summary>
-        /// 右ワイヤー入力
-        /// </summary>
+        // 右ワイヤー入力
         public void OnWireRight(InputValue value)
         {
-            float inputValue = value.Get<float>();
-            bool isPressed = inputValue > 0.5f;
+            var inputValue = value.Get<float>();
+            var isPressed = inputValue > 0.5f;
 
             if (isPressed && !_rightPressed)
             {
@@ -145,25 +113,17 @@ namespace Player
             }
         }
 
-        #endregion
-
-        /// <summary>
-        /// 射出起点の位置を取得
-        /// </summary>
         private Vector3 GetOriginPosition(Transform origin)
         {
-            return origin != null ? origin.position : transform.position;
+            return origin ? origin.position : transform.position;
         }
 
-        /// <summary>
-        /// ワイヤーを発射
-        /// </summary>
         private void FireWire(ref SpringJoint joint, Transform origin)
         {
             // すでに接続中なら何もしない
-            if (joint != null) return;
+            if (joint) return;
 
-            Vector3 originPos = GetOriginPosition(origin);
+            var originPos = GetOriginPosition(origin);
 
             // レイキャストでターゲットを検索
             if (Physics.Raycast(originPos, _aimDirection, out var hit, maxRange, targetLayers))
@@ -174,40 +134,31 @@ namespace Player
                 joint.connectedAnchor = hit.point;
 
                 // ローカルアンカー（射出起点）を設定
-                if (origin != null)
+                if (origin)
                 {
                     joint.anchor = transform.InverseTransformPoint(originPos);
                 }
 
                 // ワイヤー長を現在の距離に設定
-                float distance = Vector3.Distance(originPos, hit.point);
+                var distance = Vector3.Distance(originPos, hit.point);
                 joint.maxDistance = distance;
                 joint.minDistance = 0f;
 
                 // バネの設定
                 joint.spring = springForce;
                 joint.damper = damper;
-
-                Debug.Log($"Wire attached at {hit.point}, distance: {distance}");
             }
         }
 
-        /// <summary>
-        /// ワイヤーを解除
-        /// </summary>
         private void ReleaseWire(ref SpringJoint joint)
         {
-            if (joint != null)
+            if (joint)
             {
                 Destroy(joint);
                 joint = null;
-                Debug.Log("Wire released");
             }
         }
 
-        /// <summary>
-        /// すべてのワイヤーを解除
-        /// </summary>
         public void ReleaseAll()
         {
             ReleaseWire(ref _leftJoint);
@@ -216,43 +167,37 @@ namespace Player
             _rightPressed = false;
         }
 
-        /// <summary>
-        /// ワイヤーの視覚表示を更新
-        /// </summary>
         private void UpdateWireVisual(SpringJoint joint, Transform origin, LineRenderer line)
         {
-            if (line == null) return;
+            if (!line) return;
 
-            if (joint == null)
+            if (!joint)
             {
                 line.enabled = false;
                 return;
             }
 
             line.enabled = true;
-            Vector3 start = GetOriginPosition(origin);
-            Vector3 end = joint.connectedAnchor;
+            var start = GetOriginPosition(origin);
+            var end = joint.connectedAnchor;
 
             // カテナリー曲線で中間点を計算
             line.positionCount = lineSegments;
-            for (int i = 0; i < lineSegments; i++)
+            for (var i = 0; i < lineSegments; i++)
             {
-                float t = i / (float)(lineSegments - 1);
-                Vector3 point = CalculateCatenary(start, end, t, sagAmount);
+                var t = i / (float)(lineSegments - 1);
+                var point = CalculateCatenary(start, end, t, sagAmount);
                 line.SetPosition(i, point);
             }
         }
 
-        /// <summary>
-        /// カテナリー曲線（たるみ）を計算
-        /// </summary>
         private Vector3 CalculateCatenary(Vector3 start, Vector3 end, float t, float sag)
         {
             // 線形補間
-            Vector3 linear = Vector3.Lerp(start, end, t);
+            var linear = Vector3.Lerp(start, end, t);
 
             // たるみ（放物線近似: 中央が最もたるむ）
-            float sagOffset = sag * Mathf.Sin(t * Mathf.PI);
+            var sagOffset = sag * Mathf.Sin(t * Mathf.PI);
 
             // 下向きにたるませる
             return linear + Vector3.down * sagOffset;

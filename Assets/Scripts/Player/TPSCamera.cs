@@ -3,10 +3,7 @@ using UnityEngine.InputSystem;
 
 namespace Player
 {
-    /// <summary>
-    /// TPSフリーカメラ
-    /// マウスで自由に視点を回転し、キャラクターを追従する
-    /// </summary>
+    // TPSフリーカメラ - マウスで自由に視点を回転し、キャラクターを追従する
     public class TpsCamera : MonoBehaviour
     {
         [SerializeField] private float height = 1.5f;
@@ -53,9 +50,6 @@ namespace Player
             HandlePosition();
         }
 
-        /// <summary>
-        /// カメラの回転処理
-        /// </summary>
         private void HandleRotation()
         {
             // マウス入力で回転角度を更新
@@ -69,9 +63,6 @@ namespace Player
             transform.rotation = Quaternion.Euler(_pitch, _yaw, 0f);
         }
 
-        /// <summary>
-        /// カメラの位置処理
-        /// </summary>
         private void HandlePosition()
         {
             // 注視点（ターゲットの位置 + 高さオフセット）
@@ -86,9 +77,6 @@ namespace Player
             transform.position = targetPosition;
         }
 
-        /// <summary>
-        /// 壁との衝突判定を行い、適切なカメラ距離を返す
-        /// </summary>
         private float CheckCollision(Vector3 lookAtPoint, Vector3 desiredPosition)
         {
             var direction = desiredPosition - lookAtPoint;
@@ -112,23 +100,13 @@ namespace Player
             return distance;
         }
 
-        #region Input System Callbacks
-
-        /// <summary>
-        /// 視点入力のコールバック（Input System SendMessages）
-        /// </summary>
+        // 視点入力のコールバック（Input System SendMessages）
         public void OnLook(InputValue value)
         {
             _lookInput = value.Get<Vector2>();
         }
 
-        #endregion
-
-        #region Public Properties
-
-        /// <summary>
-        /// カメラの前方向（Y成分を除去して正規化）
-        /// </summary>
+        // カメラの前方向（Y成分を除去して正規化）
         public Vector3 Forward
         {
             get
@@ -139,9 +117,7 @@ namespace Player
             }
         }
 
-        /// <summary>
-        /// カメラの右方向（Y成分を除去して正規化）
-        /// </summary>
+        // カメラの右方向（Y成分を除去して正規化）
         public Vector3 Right
         {
             get
@@ -152,27 +128,16 @@ namespace Player
             }
         }
 
-        #endregion
-
-        #region Public Methods
-
-        /// <summary>
-        /// 追従ターゲットを設定（Coordinatorから毎フレーム呼ばれる）
-        /// </summary>
+        // 追従ターゲットを設定（Coordinatorから毎フレーム呼ばれる）
         public void FollowTarget(Transform newTarget)
         {
             _target = newTarget;
         }
 
-        /// <summary>
-        /// カーソルのロック状態を切り替え
-        /// </summary>
         public void SetCursorLock(bool locked)
         {
             Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !locked;
         }
-
-        #endregion
     }
 }

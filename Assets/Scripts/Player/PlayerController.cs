@@ -3,10 +3,7 @@ using UnityEngine.InputSystem;
 
 namespace Player
 {
-    /// <summary>
-    /// RigidbodyベースのTPSキャラクターコントローラー
-    /// カメラ相対移動でキャラクターを操作する
-    /// </summary>
+    // RigidbodyベースのTPSキャラクターコントローラー - カメラ相対移動でキャラクターを操作する
     [RequireComponent(typeof(Rigidbody))]
     public class PlayerController : MonoBehaviour
     {
@@ -43,15 +40,10 @@ namespace Player
             _rb.constraints = RigidbodyConstraints.FreezeRotation;
 
             // Animatorが未設定の場合、子オブジェクトから取得
-            if (animator == null)
-            {
-                animator = GetComponentInChildren<Animator>();
-            }
+            animator ??= GetComponentInChildren<Animator>();
         }
 
-        /// <summary>
-        /// カメラの向きを設定（Coordinatorから毎フレーム呼ばれる）
-        /// </summary>
+        // カメラの向きを設定（Coordinatorから毎フレーム呼ばれる）
         public void SetMoveDirection(Vector3 cameraForward, Vector3 cameraRight)
         {
             _cameraForward = cameraForward;
@@ -69,9 +61,6 @@ namespace Player
             UpdateAnimator();
         }
 
-        /// <summary>
-        /// 接地判定
-        /// </summary>
         private bool IsGrounded()
         {
             return Physics.SphereCast(
@@ -84,9 +73,7 @@ namespace Player
             );
         }
 
-        /// <summary>
-        /// 移動処理（カメラ相対）- FixedUpdateで実行
-        /// </summary>
+        // 移動処理（カメラ相対）- FixedUpdateで実行
         private void HandleMovement()
         {
             // 接地中のみ移動入力を適用
@@ -99,7 +86,7 @@ namespace Player
             if (moveDirection.sqrMagnitude > 0.01f)
             {
                 // 目標速度を設定（Y軸は維持）
-                Vector3 targetVelocity = moveDirection.normalized * moveSpeed;
+                var targetVelocity = moveDirection.normalized * moveSpeed;
                 _rb.linearVelocity = new Vector3(targetVelocity.x, _rb.linearVelocity.y, targetVelocity.z);
             }
             else
@@ -109,9 +96,7 @@ namespace Player
             }
         }
 
-        /// <summary>
-        /// 回転処理 - Updateで実行（滑らかな回転のため）
-        /// </summary>
+        // 回転処理 - Updateで実行（滑らかな回転のため）
         private void HandleRotation()
         {
             var moveDirection = _cameraForward * _moveInput.y + _cameraRight * _moveInput.x;
@@ -127,28 +112,17 @@ namespace Player
             }
         }
 
-        /// <summary>
-        /// Animatorパラメータの更新
-        /// </summary>
         private void UpdateAnimator()
         {
-            if (animator == null) return;
-
             // 移動入力の大きさを0~1でAnimatorに渡す
             var speed = _moveInput.magnitude;
             animator.SetFloat(SpeedParam, speed);
         }
 
-        #region Input System Callbacks
-
-        /// <summary>
-        /// 移動入力のコールバック（Input System SendMessages）
-        /// </summary>
+        // 移動入力のコールバック（Input System SendMessages）
         public void OnMove(InputValue value)
         {
             _moveInput = value.Get<Vector2>();
         }
-
-        #endregion
     }
 }
