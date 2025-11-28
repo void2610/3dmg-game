@@ -19,6 +19,7 @@ namespace Player
         [Header("ジャンプ/ブースト設定")]
         [SerializeField] private float jumpForce = 8f;
         [SerializeField] private float boostForce = 15f;
+        [SerializeField] private float airControlForce = 3f;
 
         [Header("参照")]
         [SerializeField] private Animator animator;
@@ -31,15 +32,15 @@ namespace Player
         private Vector2 _moveInput;
         private bool _boostPressed;
 
+        public void OnMove(InputValue value) => _moveInput = value.Get<Vector2>();
+
+        public void OnBoost(InputValue value) => _boostPressed = value.Get<float>() > 0.5f;
+
         public void SetMoveDirection(Vector3 cameraForward, Vector3 cameraRight)
         {
             _cameraForward = cameraForward;
             _cameraRight = cameraRight;
         }
-
-        public void OnMove(InputValue value) => _moveInput = value.Get<Vector2>();
-
-        public void OnBoost(InputValue value) => _boostPressed = value.Get<float>() > 0.5f;
 
         private bool IsGrounded()
         {
@@ -78,6 +79,17 @@ namespace Player
             if (_boostPressed)
             {
                 _rb.linearVelocity = new Vector3(_rb.linearVelocity.x, jumpForce, _rb.linearVelocity.z);
+            }
+        }
+
+        private void HandleAirControl()
+        {
+            var moveDirection = GetMoveDirection();
+
+            if (moveDirection.sqrMagnitude > 0.01f)
+            {
+                // 通常の空中制御
+                _rb.AddForce(moveDirection.normalized * airControlForce, ForceMode.Acceleration);
             }
         }
 
@@ -136,6 +148,7 @@ namespace Player
             }
             else
             {
+                HandleAirControl();
                 HandleAirBoost();
             }
         }
