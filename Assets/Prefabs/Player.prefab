@@ -496,13 +496,14 @@ MonoBehaviour:
   leftWireOrigin: {fileID: 8154673004842942427}
   rightWireOrigin: {fileID: 3672289216106092151}
   maxRange: 50
-  springForce: 500
-  damper: 50
+  springForce: 100
+  damper: 10
   targetLayers:
     serializedVersion: 2
     m_Bits: 55
-  reelSpeed: 5
-  minDistance: 2
+  manualReelSpeed: 10
+  autoReelForce: 1
+  minDistance: 1
   leftLineRenderer: {fileID: 567988016828181350}
   rightLineRenderer: {fileID: 8905265288379207910}
   lineSegments: 20

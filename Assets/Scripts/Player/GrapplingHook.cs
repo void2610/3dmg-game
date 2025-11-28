@@ -17,7 +17,8 @@ namespace Player
         [SerializeField] float damper = 50f;
         [SerializeField] LayerMask targetLayers = ~0;
 
-        [SerializeField] float reelSpeed = 5f;
+        [SerializeField] float manualReelSpeed = 5f;
+        [SerializeField] float autoReelForce = 3f;
         [SerializeField] float minDistance = 2f;
 
         [SerializeField] LineRenderer leftLineRenderer;
@@ -72,23 +73,20 @@ namespace Player
             return Vector3.Dot(_rb.linearVelocity, toAnchor);
         }
 
-        // 速度に応じた自動巻き取り/伸張
+        // 自動巻き取り: 巻き取り力と速度の相互作用で連続的に変化
         private void AutoAdjustWireLength(SpringJoint joint)
         {
+            // アンカー方向への速度成分（正=近づく、負=離れる）
             var velocityToward = GetVelocityTowardAnchor(joint);
 
-            if (velocityToward > 0f)
-            {
-                // アンカーに向かっている → 自動巻き取り（速度に比例）
-                var autoReelAmount = velocityToward * Time.deltaTime;
-                joint.maxDistance = Mathf.Max(joint.maxDistance - autoReelAmount, minDistance);
-            }
-            else
-            {
-                // アンカーから離れている → ワイヤーを伸ばす（無制限）
-                var extendAmount = -velocityToward * Time.deltaTime;
-                joint.maxDistance += extendAmount;
-            }
+            // 実効巻き取り速度 = 基本巻き取り力 + 速度成分
+            // 近づいている(正) → 巻き取りが加速
+            // 離れている(負) → 巻き取りが減速、さらに負ならワイヤー伸張
+            var effectiveReelSpeed = autoReelForce + velocityToward;
+
+            // maxDistanceを調整
+            var deltaDistance = effectiveReelSpeed * Time.deltaTime;
+            joint.maxDistance = Mathf.Max(joint.maxDistance - deltaDistance, minDistance);
         }
 
         private void FireWire(ref SpringJoint joint, Transform origin)
@@ -159,7 +157,7 @@ namespace Player
         }
 
         private void ReelIn(SpringJoint joint)
-            => joint.maxDistance = Mathf.Max(joint.maxDistance - reelSpeed * Time.deltaTime, minDistance);
+            => joint.maxDistance = Mathf.Max(joint.maxDistance - manualReelSpeed * Time.deltaTime, minDistance);
 
         private void Awake()
         {
