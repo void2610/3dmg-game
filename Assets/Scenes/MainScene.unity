@@ -311,7 +311,6 @@ MonoBehaviour:
   collisionLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  positionSmoothTime: 0
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -652,7 +651,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1802792911974407395, guid: c5343346698324990843a8b15703746d, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.926
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 1802792911974407395, guid: c5343346698324990843a8b15703746d, type: 3}
       propertyPath: m_LocalPosition.z
