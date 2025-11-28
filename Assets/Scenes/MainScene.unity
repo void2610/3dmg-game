@@ -301,7 +301,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   height: 1
-  distance: 4
+  baseDistance: 4
   minDistance: 1
   maxDistance: 10
   sensitivity: 0.3
@@ -311,6 +311,16 @@ MonoBehaviour:
   collisionLayers:
     serializedVersion: 2
     m_Bits: 4294967295
+  maxSpeedDistance: 8
+  speedForMaxDistance: 50
+  distanceSmoothTime: 0.3
+  baseFov: 60
+  maxSpeedFov: 80
+  fovSmoothTime: 0.2
+  verticalVelocityPitchFactor: 2
+  maxPitchOffset: 50
+  pitchOffsetSmoothTime: 0.2
+  positionSmoothTime: 0.05
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
