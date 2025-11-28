@@ -30,6 +30,8 @@ namespace Player
         [SerializeField] private float boostVfxRate = 50f;
 
         private static readonly int _speedParam = Animator.StringToHash("Speed");
+        private static readonly int _isGroundedParam = Animator.StringToHash("IsGrounded");
+        private static readonly int _verticalVelocityParam = Animator.StringToHash("VerticalVelocity");
         private static readonly int _rateParam = Shader.PropertyToID("Rate");
 
         private Vector3 _cameraForward;
@@ -134,8 +136,9 @@ namespace Player
 
         private void UpdateAnimator()
         {
-            var speed = _moveInput.magnitude;
-            animator.SetFloat(_speedParam, speed);
+            animator.SetFloat(_speedParam, _moveInput.magnitude);
+            animator.SetBool(_isGroundedParam, IsGrounded());
+            animator.SetFloat(_verticalVelocityParam, _rb.linearVelocity.y);
         }
 
         private void UpdateBoostVfx()
