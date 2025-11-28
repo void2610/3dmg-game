@@ -25,6 +25,7 @@ namespace Player
         [SerializeField] int lineSegments = 20;
         [SerializeField] float sagAmount = 0.5f;
 
+        private Rigidbody _rb;
         private SpringJoint _leftJoint;
         private SpringJoint _rightJoint;
         private Vector3 _aimDirection = Vector3.forward;
@@ -63,6 +64,32 @@ namespace Player
         }
 
         private Vector3 GetOriginPosition(Transform origin) => origin.position;
+
+        // アンカー方向への速度成分を取得（正=近づく、負=離れる）
+        private float GetVelocityTowardAnchor(SpringJoint joint)
+        {
+            var toAnchor = (joint.connectedAnchor - transform.position).normalized;
+            return Vector3.Dot(_rb.linearVelocity, toAnchor);
+        }
+
+        // 速度に応じた自動巻き取り/伸張
+        private void AutoAdjustWireLength(SpringJoint joint)
+        {
+            var velocityToward = GetVelocityTowardAnchor(joint);
+
+            if (velocityToward > 0f)
+            {
+                // アンカーに向かっている → 自動巻き取り（速度に比例）
+                var autoReelAmount = velocityToward * Time.deltaTime;
+                joint.maxDistance = Mathf.Max(joint.maxDistance - autoReelAmount, minDistance);
+            }
+            else
+            {
+                // アンカーから離れている → ワイヤーを伸ばす（無制限）
+                var extendAmount = -velocityToward * Time.deltaTime;
+                joint.maxDistance += extendAmount;
+            }
+        }
 
         private void FireWire(ref SpringJoint joint, Transform origin)
         {
@@ -134,18 +161,24 @@ namespace Player
         private void ReelIn(SpringJoint joint)
             => joint.maxDistance = Mathf.Max(joint.maxDistance - reelSpeed * Time.deltaTime, minDistance);
 
+        private void Awake()
+        {
+            _rb = GetComponent<Rigidbody>();
+        }
+
         private void Update()
         {
+            // 明示的巻き取り（優先）
             if (_reelPressed)
             {
-                if (_leftJoint)
-                {
-                    ReelIn(_leftJoint);
-                }
-                if (_rightJoint)
-                {
-                    ReelIn(_rightJoint);
-                }
+                if (_leftJoint) ReelIn(_leftJoint);
+                if (_rightJoint) ReelIn(_rightJoint);
+            }
+            else
+            {
+                // 自動巻き取り/伸張
+                if (_leftJoint) AutoAdjustWireLength(_leftJoint);
+                if (_rightJoint) AutoAdjustWireLength(_rightJoint);
             }
         }
 
