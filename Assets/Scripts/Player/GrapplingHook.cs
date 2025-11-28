@@ -7,24 +7,21 @@ namespace Player
     [RequireComponent(typeof(Rigidbody))]
     public class GrapplingHook : MonoBehaviour
     {
-        [Header("ワイヤー射出起点")]
-        [SerializeField] Transform leftWireOrigin;
-        [SerializeField] Transform rightWireOrigin;
+        [SerializeField] private LayerMask targetLayers = ~0;
+        [SerializeField] private Transform leftWireOrigin;
+        [SerializeField] private Transform rightWireOrigin;
+        [SerializeField] private LineRenderer leftLineRenderer;
+        [SerializeField] private LineRenderer rightLineRenderer;
 
-        [Header("ワイヤー設定")]
-        [SerializeField] float maxRange = 50f;
-        [SerializeField] float springForce = 500f;
-        [SerializeField] float damper = 50f;
-        [SerializeField] LayerMask targetLayers = ~0;
-
-        [SerializeField] float manualReelSpeed = 5f;
-        [SerializeField] float autoReelForce = 3f;
-        [SerializeField] float minDistance = 2f;
-
-        [SerializeField] LineRenderer leftLineRenderer;
-        [SerializeField] LineRenderer rightLineRenderer;
-        [SerializeField] int lineSegments = 20;
-        [SerializeField] float sagAmount = 0.5f;
+        [Header("ワイヤーパラメータ")]
+        [SerializeField] private float maxRange = 50f;
+        [SerializeField] private float springForce = 500f;
+        [SerializeField] private float damper = 50f;
+        [SerializeField] private float manualReelSpeed = 5f;
+        [SerializeField] private float autoReelForce = 3f;
+        [SerializeField] private float minDistance = 2f;
+        [SerializeField] private int lineSegments = 20;
+        [SerializeField] private float sagAmount = 0.5f;
 
         private Rigidbody _rb;
         private SpringJoint _leftJoint;
@@ -33,38 +30,21 @@ namespace Player
         private bool _reelPressed;
 
         public void SetAimDirection(Vector3 direction) => _aimDirection = direction.normalized;
-
         public void OnWireReel(InputValue value) => _reelPressed = value.Get<float>() > 0.5f;
 
         public void OnWireLeft(InputValue value)
         {
             var isPressed = value.Get<float>() > 0.5f;
-
-            if (isPressed)
-            {
-                FireWire(ref _leftJoint, leftWireOrigin);
-            }
-            else
-            {
-                ReleaseWire(ref _leftJoint);
-            }
+            if (isPressed) FireWire(ref _leftJoint, leftWireOrigin);
+            else ReleaseWire(ref _leftJoint);
         }
 
         public void OnWireRight(InputValue value)
         {
             var isPressed = value.Get<float>() > 0.5f;
-
-            if (isPressed)
-            {
-                FireWire(ref _rightJoint, rightWireOrigin);
-            }
-            else
-            {
-                ReleaseWire(ref _rightJoint);
-            }
+            if (isPressed) FireWire(ref _rightJoint, rightWireOrigin);
+            else ReleaseWire(ref _rightJoint);
         }
-
-        private Vector3 GetOriginPosition(Transform origin) => origin.position;
 
         // アンカー方向への速度成分を取得（正=近づく、負=離れる）
         private float GetVelocityTowardAnchor(SpringJoint joint)
@@ -94,7 +74,7 @@ namespace Player
             // すでに接続中なら何もしない
             if (joint) return;
 
-            var originPos = GetOriginPosition(origin);
+            var originPos = origin.position;
 
             // レイキャストでターゲットを検索
             if (Physics.Raycast(originPos, _aimDirection, out var hit, maxRange, targetLayers))
@@ -135,16 +115,13 @@ namespace Player
                 return;
             }
 
-            line.enabled = true;
-            var start = GetOriginPosition(origin);
-            var end = joint.connectedAnchor;
-
             // カテナリー曲線で中間点を計算
+            line.enabled = true;
             line.positionCount = lineSegments;
             for (var i = 0; i < lineSegments; i++)
             {
                 var t = i / (float)(lineSegments - 1);
-                var point = CalculateCatenary(start, end, t, sagAmount);
+                var point = CalculateCatenary(origin.position, joint.connectedAnchor, t, sagAmount);
                 line.SetPosition(i, point);
             }
         }
@@ -157,7 +134,9 @@ namespace Player
         }
 
         private void ReelIn(SpringJoint joint)
-            => joint.maxDistance = Mathf.Max(joint.maxDistance - manualReelSpeed * Time.deltaTime, minDistance);
+        {
+            joint.maxDistance = Mathf.Max(joint.maxDistance - manualReelSpeed * Time.deltaTime, minDistance);
+        }
 
         private void Awake()
         {
