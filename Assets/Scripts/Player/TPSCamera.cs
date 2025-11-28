@@ -7,11 +7,12 @@ namespace Player
     /// TPSフリーカメラ
     /// マウスで自由に視点を回転し、キャラクターを追従する
     /// </summary>
-    public class TPSCamera : MonoBehaviour
+    public class TpsCamera : MonoBehaviour
     {
-        [Header("ターゲット設定")]
-        [SerializeField] private Transform target;
         [SerializeField] private float height = 1.5f;
+
+        // ターゲット参照（DIでセットアップ）
+        private Transform _target;
 
         [Header("カメラ設定")]
         [SerializeField] private float distance = 4.0f;
@@ -27,18 +28,9 @@ namespace Player
         [SerializeField] private float collisionRadius = 0.3f;
         [SerializeField] private LayerMask collisionLayers = ~0;
 
-        [Header("スムージング")]
-        [SerializeField] private float positionSmoothTime = 0.1f;
-
-        // 入力値
         private Vector2 _lookInput;
-
-        // 回転角度
         private float _yaw;
         private float _pitch;
-
-        // スムージング用
-        private Vector3 _currentVelocity;
 
         private void Start()
         {
@@ -48,10 +40,7 @@ namespace Player
             _pitch = eulerAngles.x;
 
             // ピッチ角度を-180~180の範囲に正規化
-            if (_pitch > 180f)
-            {
-                _pitch -= 360f;
-            }
+            if (_pitch > 180f) _pitch -= 360f;
 
             // カーソルをロック
             Cursor.lockState = CursorLockMode.Locked;
@@ -60,8 +49,6 @@ namespace Player
 
         private void LateUpdate()
         {
-            if (target == null) return;
-
             HandleRotation();
             HandlePosition();
         }
@@ -88,24 +75,15 @@ namespace Player
         private void HandlePosition()
         {
             // 注視点（ターゲットの位置 + 高さオフセット）
-            var lookAtPoint = target.position + Vector3.up * height;
-
+            var lookAtPoint = _target.position + Vector3.up * height;
             // カメラの理想位置を計算
             var desiredPosition = lookAtPoint - transform.forward * distance;
-
             // 壁との衝突判定
             var actualDistance = CheckCollision(lookAtPoint, desiredPosition);
 
             // 最終的なカメラ位置
             var targetPosition = lookAtPoint - transform.forward * actualDistance;
-
-            // スムーズに移動
-            transform.position = Vector3.SmoothDamp(
-                transform.position,
-                targetPosition,
-                ref _currentVelocity,
-                positionSmoothTime
-            );
+            transform.position = targetPosition;
         }
 
         /// <summary>
@@ -146,14 +124,44 @@ namespace Player
 
         #endregion
 
+        #region Public Properties
+
+        /// <summary>
+        /// カメラの前方向（Y成分を除去して正規化）
+        /// </summary>
+        public Vector3 Forward
+        {
+            get
+            {
+                var forward = transform.forward;
+                forward.y = 0f;
+                return forward.normalized;
+            }
+        }
+
+        /// <summary>
+        /// カメラの右方向（Y成分を除去して正規化）
+        /// </summary>
+        public Vector3 Right
+        {
+            get
+            {
+                var right = transform.right;
+                right.y = 0f;
+                return right.normalized;
+            }
+        }
+
+        #endregion
+
         #region Public Methods
 
         /// <summary>
-        /// ターゲットを設定
+        /// 追従ターゲットを設定（Coordinatorから毎フレーム呼ばれる）
         /// </summary>
-        public void SetTarget(Transform newTarget)
+        public void FollowTarget(Transform newTarget)
         {
-            target = newTarget;
+            _target = newTarget;
         }
 
         /// <summary>

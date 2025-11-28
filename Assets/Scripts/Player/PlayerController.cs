@@ -16,8 +16,11 @@ namespace Player
         [SerializeField] private float gravity = -9.81f;
 
         [Header("参照")]
-        [SerializeField] private Transform cameraTransform;
         [SerializeField] private Animator animator;
+
+        // カメラの向き（Coordinatorから毎フレーム設定される）
+        private Vector3 _cameraForward;
+        private Vector3 _cameraRight;
 
         // コンポーネント
         private CharacterController _characterController;
@@ -35,21 +38,20 @@ namespace Player
         {
             _characterController = GetComponent<CharacterController>();
 
-            // カメラが未設定の場合、メインカメラを使用
-            if (cameraTransform == null)
-            {
-                var mainCamera = Camera.main;
-                if (mainCamera != null)
-                {
-                    cameraTransform = mainCamera.transform;
-                }
-            }
-
             // Animatorが未設定の場合、子オブジェクトから取得
             if (animator == null)
             {
                 animator = GetComponentInChildren<Animator>();
             }
+        }
+
+        /// <summary>
+        /// カメラの向きを設定（Coordinatorから毎フレーム呼ばれる）
+        /// </summary>
+        public void SetMoveDirection(Vector3 cameraForward, Vector3 cameraRight)
+        {
+            _cameraForward = cameraForward;
+            _cameraRight = cameraRight;
         }
 
         private void Update()
@@ -64,20 +66,8 @@ namespace Player
         /// </summary>
         private void HandleMovement()
         {
-            if (cameraTransform == null) return;
-
-            // カメラの向きを基準にした移動方向を計算
-            var cameraForward = cameraTransform.forward;
-            var cameraRight = cameraTransform.right;
-
-            // Y成分を除去して水平方向のみに
-            cameraForward.y = 0f;
-            cameraRight.y = 0f;
-            cameraForward.Normalize();
-            cameraRight.Normalize();
-
-            // 入力に基づいた移動ベクトル
-            var moveDirection = cameraForward * _moveInput.y + cameraRight * _moveInput.x;
+            // 入力に基づいた移動ベクトル（Coordinatorから受け取ったカメラ向きを使用）
+            var moveDirection = _cameraForward * _moveInput.y + _cameraRight * _moveInput.x;
 
             // 移動処理
             if (moveDirection.sqrMagnitude > 0.01f)
