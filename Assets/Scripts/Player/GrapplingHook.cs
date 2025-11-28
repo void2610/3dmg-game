@@ -36,14 +36,12 @@ namespace Player
         {
             var isPressed = value.Get<float>() > 0.5f;
             if (isPressed) FireWire(ref _leftJoint, leftWireOrigin);
-            else ReleaseWire(ref _leftJoint);
         }
 
         public void OnWireRight(InputValue value)
         {
             var isPressed = value.Get<float>() > 0.5f;
             if (isPressed) FireWire(ref _rightJoint, rightWireOrigin);
-            else ReleaseWire(ref _rightJoint);
         }
 
         // アンカー方向への速度成分を取得（正=近づく、負=離れる）
@@ -95,6 +93,8 @@ namespace Player
                 // バネの設定
                 joint.spring = springForce;
                 joint.damper = damper;
+                joint.breakForce = Mathf.Infinity;
+                joint.breakTorque = Mathf.Infinity;
             }
         }
 
@@ -145,6 +145,14 @@ namespace Player
 
         private void Update()
         {
+            // ワイヤーリリース判定（実際のキー状態を確認）
+            var keyboard = Keyboard.current;
+            if (keyboard != null)
+            {
+                if (!keyboard.qKey.isPressed) ReleaseWire(ref _leftJoint);
+                if (!keyboard.eKey.isPressed) ReleaseWire(ref _rightJoint);
+            }
+
             // 明示的巻き取り（優先）
             if (_reelPressed)
             {
