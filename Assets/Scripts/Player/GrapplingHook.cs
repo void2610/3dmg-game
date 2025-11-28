@@ -24,6 +24,12 @@ namespace Player
         [SerializeField] private float reelSpeed = 5f;
         [SerializeField] private float minDistance = 2f;
 
+        [Header("ワイヤー表示")]
+        [SerializeField] private LineRenderer leftLineRenderer;
+        [SerializeField] private LineRenderer rightLineRenderer;
+        [SerializeField] private int lineSegments = 20;
+        [SerializeField] private float sagAmount = 0.5f;
+
         // コンポーネント
         private Rigidbody _rb;
 
@@ -69,6 +75,13 @@ namespace Player
             {
                 ReelIn(_rightJoint);
             }
+        }
+
+        private void LateUpdate()
+        {
+            // ワイヤー表示更新
+            UpdateWireVisual(_leftJoint, leftWireOrigin, leftLineRenderer);
+            UpdateWireVisual(_rightJoint, rightWireOrigin, rightLineRenderer);
         }
 
         /// <summary>
@@ -201,6 +214,48 @@ namespace Player
             ReleaseWire(ref _rightJoint);
             _leftPressed = false;
             _rightPressed = false;
+        }
+
+        /// <summary>
+        /// ワイヤーの視覚表示を更新
+        /// </summary>
+        private void UpdateWireVisual(SpringJoint joint, Transform origin, LineRenderer line)
+        {
+            if (line == null) return;
+
+            if (joint == null)
+            {
+                line.enabled = false;
+                return;
+            }
+
+            line.enabled = true;
+            Vector3 start = GetOriginPosition(origin);
+            Vector3 end = joint.connectedAnchor;
+
+            // カテナリー曲線で中間点を計算
+            line.positionCount = lineSegments;
+            for (int i = 0; i < lineSegments; i++)
+            {
+                float t = i / (float)(lineSegments - 1);
+                Vector3 point = CalculateCatenary(start, end, t, sagAmount);
+                line.SetPosition(i, point);
+            }
+        }
+
+        /// <summary>
+        /// カテナリー曲線（たるみ）を計算
+        /// </summary>
+        private Vector3 CalculateCatenary(Vector3 start, Vector3 end, float t, float sag)
+        {
+            // 線形補間
+            Vector3 linear = Vector3.Lerp(start, end, t);
+
+            // たるみ（放物線近似: 中央が最もたるむ）
+            float sagOffset = sag * Mathf.Sin(t * Mathf.PI);
+
+            // 下向きにたるませる
+            return linear + Vector3.down * sagOffset;
         }
     }
 }
