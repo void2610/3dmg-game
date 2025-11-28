@@ -320,7 +320,6 @@ MonoBehaviour:
   verticalVelocityPitchFactor: 2
   maxPitchOffset: 50
   pitchOffsetSmoothTime: 0.2
-  positionSmoothTime: 0.05
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -1239,6 +1238,18 @@ PrefabInstance:
       propertyPath: cameraTransform
       value: 
       objectReference: {fileID: 330585546}
+    - target: {fileID: 5677080802313971130, guid: c5343346698324990843a8b15703746d, type: 3}
+      propertyPath: dragForce
+      value: 555
+      objectReference: {fileID: 0}
+    - target: {fileID: 5677080802313971130, guid: c5343346698324990843a8b15703746d, type: 3}
+      propertyPath: dynamicRatio
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5677080802313971130, guid: c5343346698324990843a8b15703746d, type: 3}
+      propertyPath: stiffnessForce
+      value: 0.001
+      objectReference: {fileID: 0}
     - target: {fileID: 6916062199634734234, guid: c5343346698324990843a8b15703746d, type: 3}
       propertyPath: m_Name
       value: Player

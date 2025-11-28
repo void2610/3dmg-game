@@ -141,7 +141,7 @@ namespace Player
         {
             animator.SetFloat(_speedParam, _moveInput.magnitude);
             animator.SetBool(_isGroundedParam, IsGrounded());
-            animator.SetFloat(_verticalVelocityParam, _rb.linearVelocity.y);
+            animator.SetFloat(_verticalVelocityParam, Mathf.Abs(_rb.linearVelocity.y));
         }
 
         private void UpdateBoostVfx()
