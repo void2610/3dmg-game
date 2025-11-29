@@ -175,5 +175,11 @@ namespace Player
             UpdateAnimator();
             UpdateBoostVfx();
         }
+
+        private void LateUpdate()
+        {
+            // Animatorによる子オブジェクトの回転をリセット
+            animator.transform.localRotation = Quaternion.identity;
+        }
     }
 }
