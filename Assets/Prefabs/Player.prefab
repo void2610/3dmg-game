@@ -684,12 +684,20 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 9100000, guid: 8795629357a064d40b76f63a188d6270, type: 2}
     - target: {fileID: 11400084, guid: 13a16f60da4245c45a865b2136ba272c, type: 3}
+      propertyPath: dragForce
+      value: 555
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400084, guid: 13a16f60da4245c45a865b2136ba272c, type: 3}
       propertyPath: m_Enabled
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 11400084, guid: 13a16f60da4245c45a865b2136ba272c, type: 3}
       propertyPath: dynamicRatio
-      value: 0.2
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400084, guid: 13a16f60da4245c45a865b2136ba272c, type: 3}
+      propertyPath: stiffnessForce
+      value: 0.001
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

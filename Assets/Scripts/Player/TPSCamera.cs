@@ -33,29 +33,27 @@ namespace Player
         [SerializeField] private float maxSpeedFov = 80f;
         [SerializeField] private float fovSmoothTime = 0.2f;
 
-        [Header("ダイナミックカメラ - ピッチ")]
-        [SerializeField] private float verticalVelocityPitchFactor = 0.5f;
-        [SerializeField] private float maxPitchOffset = 10f;
-        [SerializeField] private float pitchOffsetSmoothTime = 0.2f;
+        [Header("参照")]
+        [SerializeField] private PlayerController player;
+        [SerializeField] private GrapplingHook grapplingHook;
 
-        private Transform _target;
+        private Rigidbody _playerRigidbody;
         private Vector2 _lookInput;
         private float _yaw;
         private float _pitch;
         private Vector3 _targetVelocity;
         private float _currentDistance;
         private float _currentFov;
-        private float _currentPitchOffset;
         private Camera _camera;
 
         // SmoothDamp用の速度変数
         private float _distanceVelocity;
         private float _fovVelocity;
-        private float _pitchOffsetVelocity;
 
         private void Awake()
         {
             _camera = GetComponent<Camera>();
+            _playerRigidbody = player.GetComponent<Rigidbody>();
         }
 
         private void Start()
@@ -78,11 +76,20 @@ namespace Player
             _camera.fieldOfView = baseFov;
         }
 
+        private void Update()
+        {
+            // カメラの向きをPlayer/GrapplingHookに伝達
+            player.SetMoveDirection(Forward, Right);
+            grapplingHook.SetAimDirection(transform.forward);
+
+            // 速度情報を取得
+            _targetVelocity = _playerRigidbody.linearVelocity;
+        }
+
         private void LateUpdate()
         {
             UpdateDynamicDistance();
             UpdateDynamicFov();
-            UpdateDynamicPitchOffset();
             HandleRotation();
             HandlePosition();
         }
@@ -106,32 +113,20 @@ namespace Player
             _camera.fieldOfView = _currentFov;
         }
 
-        private void UpdateDynamicPitchOffset()
-        {
-            // 垂直速度に応じてピッチオフセットを計算
-            var targetOffset = -_targetVelocity.y * verticalVelocityPitchFactor;
-            targetOffset = Mathf.Clamp(targetOffset, -maxPitchOffset, maxPitchOffset);
-            _currentPitchOffset = Mathf.SmoothDamp(_currentPitchOffset, targetOffset, ref _pitchOffsetVelocity, pitchOffsetSmoothTime);
-        }
-
         private void HandleRotation()
         {
             // マウス入力で回転角度を更新
             _yaw += _lookInput.x * sensitivity;
             _pitch -= _lookInput.y * sensitivity;
-
-            // 垂直角度を制限
             _pitch = Mathf.Clamp(_pitch, minVerticalAngle, maxVerticalAngle);
 
-            // ピッチオフセットを適用して回転
-            var finalPitch = _pitch + _currentPitchOffset;
-            transform.rotation = Quaternion.Euler(finalPitch, _yaw, 0f);
+            transform.rotation = Quaternion.Euler(_pitch, _yaw, 0f);
         }
 
         private void HandlePosition()
         {
-            // 注視点（ターゲット位置 + 高さオフセット）
-            var lookAtPoint = _target.position + Vector3.up * height;
+            // 注視点（Player位置 + 高さオフセット）
+            var lookAtPoint = player.transform.position + Vector3.up * height;
 
             // カメラの理想位置を計算（動的距離を使用）
             var desiredPosition = lookAtPoint - transform.forward * _currentDistance;
@@ -189,12 +184,6 @@ namespace Player
                 return right.normalized;
             }
         }
-
-        // 追従ターゲットを設定（Coordinatorから毎フレーム呼ばれる）
-        public void FollowTarget(Transform newTarget) => _target = newTarget;
-
-        // ターゲットの速度を設定（ダイナミックカメラ用）
-        public void SetTargetVelocity(Vector3 velocity) => _targetVelocity = velocity;
 
         public void SetCursorLock(bool locked)
         {
