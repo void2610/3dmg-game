@@ -123,12 +123,10 @@ namespace Player
         {
             var moveDirection = GetMoveDirection();
 
-            // WASD入力があればその方向、なければカメラ前方向
-            var targetDirection = moveDirection.sqrMagnitude > 0.01f ? moveDirection : _cameraForward;
-
-            if (targetDirection.sqrMagnitude > 0.01f)
+            // WASD入力がある場合のみ回転
+            if (moveDirection.sqrMagnitude > 0.01f)
             {
-                var targetRotation = Quaternion.LookRotation(targetDirection);
+                var targetRotation = Quaternion.LookRotation(moveDirection);
                 transform.rotation = Quaternion.Slerp(
                     transform.rotation,
                     targetRotation,
