@@ -35,7 +35,6 @@ namespace Player
 
         [Header("参照")]
         [SerializeField] private PlayerController player;
-        [SerializeField] private GrapplingHook grapplingHook;
 
         private Rigidbody _playerRigidbody;
         private Vector2 _lookInput;
@@ -78,9 +77,9 @@ namespace Player
 
         private void Update()
         {
-            // カメラの向きをPlayer/GrapplingHookに伝達
-            player.SetMoveDirection(Forward, Right);
-            grapplingHook.SetAimDirection(transform.forward);
+            // カメラの向きをPlayerに伝達
+            player.SetCameraDirection(Forward, Right);
+            player.SetAimDirection(transform.forward);
 
             // 速度情報を取得
             _targetVelocity = _playerRigidbody.linearVelocity;
@@ -183,12 +182,6 @@ namespace Player
                 right.y = 0f;
                 return right.normalized;
             }
-        }
-
-        public void SetCursorLock(bool locked)
-        {
-            Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
-            Cursor.visible = !locked;
         }
     }
 }

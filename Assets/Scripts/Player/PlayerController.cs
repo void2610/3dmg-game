@@ -4,182 +4,298 @@ using UnityEngine.VFX;
 
 namespace Player
 {
-    // RigidbodyベースのTPSキャラクターコントローラー - カメラ相対移動でキャラクターを操作する
+    // Rigidbodyベースのプレイヤーコントローラー - 立体機動装置を操作する
     [RequireComponent(typeof(Rigidbody))]
     public class PlayerController : MonoBehaviour
     {
+        [Header("フック設定")]
+        [SerializeField] private Hook leftHook;
+        [SerializeField] private Hook rightHook;
+        [SerializeField] private LayerMask hookableLayer;
+
         [Header("移動設定")]
-        [SerializeField] private float moveSpeed = 6.0f;
-        [SerializeField] private float rotationSpeed = 10.0f;
+        [SerializeField] private float speed = 13f;
+        [SerializeField] private float airSpeed = 9f;
+        [SerializeField] private float jumpSpeed = 10f;
 
-        [Header("接地判定")]
-        [SerializeField] private float groundCheckRadius = 0.3f;
-        [SerializeField] private float groundCheckDistance = 0.2f;
-        [SerializeField] private LayerMask groundLayers = ~0;
-
-        [Header("ジャンプ/ブースト設定")]
-        [SerializeField] private float jumpForce = 8f;
-        [SerializeField] private float boostForce = 15f;
-        [SerializeField] private float airControlForce = 3f;
-
-        [Header("参照")]
-        [SerializeField] private Animator animator;
+        [Header("VFX")]
         [SerializeField] private VisualEffect boostVfx;
-
-        [Header("VFX設定")]
         [SerializeField] private float boostVfxRate = 50f;
 
-        private static readonly int _speedParam = Animator.StringToHash("Speed");
-        private static readonly int _isGroundedParam = Animator.StringToHash("IsGrounded");
-        private static readonly int _verticalVelocityParam = Animator.StringToHash("VerticalVelocity");
+        private const float MaxDistance = 150f;
         private static readonly int _rateParam = Shader.PropertyToID("Rate");
 
+        private Rigidbody _rb;
         private Vector3 _cameraForward;
         private Vector3 _cameraRight;
-        private Rigidbody _rb;
+        private Vector3 _aimDirection;
+        private bool _isGrounded;
+        private Vector3 _gasTargetPosition;
+        private bool _isUsingGas;
+        private bool _oldIsUsingGas;
+
+        // Input System入力値
         private Vector2 _moveInput;
+        private bool _wireLeftPressed;
+        private bool _wireRightPressed;
+        private bool _wireReelPressed;
         private bool _boostPressed;
 
-        public void OnMove(InputValue value) => _moveInput = value.Get<Vector2>();
-
-        public void OnBoost(InputValue value) => _boostPressed = value.Get<float>() > 0.5f;
-
-        public void SetMoveDirection(Vector3 cameraForward, Vector3 cameraRight)
+        // カメラから方向を受け取る
+        public void SetCameraDirection(Vector3 forward, Vector3 right)
         {
-            _cameraForward = cameraForward;
-            _cameraRight = cameraRight;
+            _cameraForward = forward;
+            _cameraRight = right;
         }
 
-        private bool IsGrounded()
+        // カメラからエイム方向を受け取る
+        public void SetAimDirection(Vector3 direction)
         {
-            return Physics.SphereCast(
-                transform.position + Vector3.up * (groundCheckRadius + 0.1f),
-                groundCheckRadius,
-                Vector3.down,
-                out _,
-                groundCheckDistance + 0.1f,
-                groundLayers
-            );
+            _aimDirection = direction;
+        }
+
+        private float GetCameraDirection()
+        {
+            return Mathf.Atan2(_cameraForward.x, _cameraForward.z) * Mathf.Rad2Deg;
+        }
+
+        private Vector3 GetHookPoint()
+        {
+            if (Physics.Raycast(transform.position, _aimDirection, out RaycastHit hit, MaxDistance, hookableLayer))
+            {
+                return hit.point;
+            }
+            return Vector3.zero;
+        }
+
+        private float GetTargetAngle()
+        {
+            if (_moveInput.sqrMagnitude > 0.01f)
+            {
+                return GetCameraDirection() + 90f - Mathf.Atan2(_moveInput.y, _moveInput.x) * Mathf.Rad2Deg;
+            }
+            return GetCameraDirection();
+        }
+
+        private RaycastHit? RaycastIgnoreTriggers(Vector3 origin, Vector3 direction, float distance)
+        {
+            var hits = Physics.RaycastAll(origin, direction, distance);
+            foreach (var hit in hits)
+            {
+                if (!hit.collider.isTrigger)
+                {
+                    return hit;
+                }
+            }
+            return null;
+        }
+
+        private bool CheckGround()
+        {
+            return RaycastIgnoreTriggers(transform.position, -transform.up, 1.1f).HasValue;
         }
 
         private Vector3 GetMoveDirection()
         {
-            return _cameraForward * _moveInput.y + _cameraRight * _moveInput.x;
+            var moveDirection = new Vector3(_moveInput.x, 0, _moveInput.y).normalized;
+            var targetDirection = _cameraForward * moveDirection.z + _cameraRight * moveDirection.x;
+            return Vector3.Lerp(_rb.linearVelocity / speed, targetDirection, 0.2f);
         }
 
-        private void HandleMovement()
+        private Vector3 GetGasDirection()
         {
-            var moveDirection = GetMoveDirection();
-
-            if (moveDirection.sqrMagnitude > 0.01f)
+            var direction = Vector3.zero;
+            if (_wireReelPressed)
             {
-                var targetVelocity = moveDirection.normalized * moveSpeed;
-                _rb.linearVelocity = new Vector3(targetVelocity.x, _rb.linearVelocity.y, targetVelocity.z);
+                direction += Vector3.up;
             }
-            else
+            if (_moveInput.y > 0.5f)
             {
-                _rb.linearVelocity = new Vector3(0f, _rb.linearVelocity.y, 0f);
+                direction += transform.forward;
             }
+            if (_moveInput.y < -0.5f)
+            {
+                direction -= transform.forward;
+            }
+            if (_moveInput.x < -0.5f)
+            {
+                direction -= transform.right;
+            }
+            if (_moveInput.x > 0.5f)
+            {
+                direction += transform.right;
+            }
+            return direction;
         }
 
-        private void HandleJump()
+        private void InAirMovement()
         {
-            if (_boostPressed)
+            Vector3 d = GetGasDirection();
+            if (d != Vector3.zero)
             {
-                _rb.linearVelocity = new Vector3(_rb.linearVelocity.x, jumpForce, _rb.linearVelocity.z);
-            }
-        }
-
-        private void HandleAirControl()
-        {
-            var moveDirection = GetMoveDirection();
-
-            if (moveDirection.sqrMagnitude > 0.01f)
-            {
-                // 通常の空中制御
-                _rb.AddForce(moveDirection.normalized * airControlForce, ForceMode.Acceleration);
-            }
-        }
-
-        private void HandleAirBoost()
-        {
-            if (!_boostPressed) return;
-
-            var moveDirection = GetMoveDirection();
-
-            if (moveDirection.sqrMagnitude > 0.01f)
-            {
-                // WASD入力あり → その方向に加速
-                _rb.AddForce(moveDirection.normalized * boostForce, ForceMode.Acceleration);
-            }
-            else
-            {
-                // 入力なし → 上方向に加速
-                _rb.AddForce(Vector3.up * boostForce, ForceMode.Acceleration);
+                _rb.AddForce(d * airSpeed);
             }
         }
 
-        private void HandleRotation()
+        private void Jump()
         {
-            var moveDirection = GetMoveDirection();
-
-            // WASD入力がある場合のみ回転
-            if (moveDirection.sqrMagnitude > 0.01f)
+            if (CheckGround())
             {
-                var targetRotation = Quaternion.LookRotation(moveDirection);
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    targetRotation,
-                    rotationSpeed * Time.deltaTime
-                );
+                _rb.AddForce(Vector3.up * jumpSpeed, ForceMode.Impulse);
             }
         }
 
-        private void UpdateAnimator()
+        private void SetGasTargetPosition()
         {
-            animator.SetFloat(_speedParam, _moveInput.magnitude);
-            animator.SetBool(_isGroundedParam, IsGrounded());
-            animator.SetFloat(_verticalVelocityParam, Mathf.Abs(_rb.linearVelocity.y));
+            if (leftHook.State == Hook.HookState.Disabled && rightHook.State == Hook.HookState.Disabled)
+            {
+                return;
+            }
+
+            Vector3 d = Vector3.zero;
+            if (leftHook.State == Hook.HookState.Hooked)
+            {
+                d += leftHook.GetTargetPosition() - transform.position;
+                leftHook.SetWireLength(0f);
+            }
+            if (rightHook.State == Hook.HookState.Hooked)
+            {
+                d += rightHook.GetTargetPosition() - transform.position;
+                rightHook.SetWireLength(0f);
+            }
+
+            _gasTargetPosition = d;
         }
 
-        private void UpdateBoostVfx()
+        private void ResetGasTargetPosition()
         {
-            var rate = _boostPressed ? boostVfxRate : 0f;
-            boostVfx.SetFloat(_rateParam, rate);
+            _gasTargetPosition = Vector3.zero;
+            if (leftHook.State == Hook.HookState.Hooked)
+            {
+                leftHook.SetWireLength(leftHook.GetWireLength());
+            }
+            if (rightHook.State == Hook.HookState.Hooked)
+            {
+                rightHook.SetWireLength(rightHook.GetWireLength());
+            }
         }
 
-        private void Awake()
+        private void GasMovement()
+        {
+            if (leftHook.State == Hook.HookState.Disabled && rightHook.State == Hook.HookState.Disabled)
+            {
+                return;
+            }
+
+            _rb.AddForce(_gasTargetPosition * 10);
+            UpdateBoostVfx(true);
+        }
+
+        private void UpdateBoostVfx(bool active)
+        {
+            boostVfx.SetFloat(_rateParam, active ? boostVfxRate : 0f);
+        }
+
+        // Input Systemコールバック
+        public void OnMove(InputValue value) => _moveInput = value.Get<Vector2>();
+
+        public void OnWireLeft(InputValue value)
+        {
+            var pressed = value.Get<float>() > 0.5f;
+            if (pressed && !_wireLeftPressed)
+            {
+                leftHook.SetHook(GetHookPoint(), gameObject);
+            }
+            else if (!pressed && _wireLeftPressed)
+            {
+                leftHook.DisableHook();
+            }
+            _wireLeftPressed = pressed;
+        }
+
+        public void OnWireRight(InputValue value)
+        {
+            var pressed = value.Get<float>() > 0.5f;
+            if (pressed && !_wireRightPressed)
+            {
+                rightHook.SetHook(GetHookPoint(), gameObject);
+            }
+            else if (!pressed && _wireRightPressed)
+            {
+                rightHook.DisableHook();
+            }
+            _wireRightPressed = pressed;
+        }
+
+        public void OnWireReel(InputValue value) => _wireReelPressed = value.Get<float>() > 0.5f;
+
+        public void OnBoost(InputValue value)
+        {
+            var pressed = value.Get<float>() > 0.5f;
+            if (pressed && !_boostPressed)
+            {
+                _isUsingGas = true;
+            }
+            else if (!pressed && _boostPressed)
+            {
+                _isUsingGas = false;
+            }
+            _boostPressed = pressed;
+        }
+
+        private void Start()
         {
             _rb = GetComponent<Rigidbody>();
-            _rb.constraints = RigidbodyConstraints.FreezeRotation;
-            animator ??= GetComponentInChildren<Animator>();
-        }
-
-        private void FixedUpdate()
-        {
-            if (IsGrounded())
-            {
-                HandleMovement();
-                HandleJump();
-            }
-            else
-            {
-                HandleAirControl();
-                HandleAirBoost();
-            }
+            _rb.linearVelocity = Vector3.zero;
         }
 
         private void Update()
         {
-            HandleRotation();
-            UpdateAnimator();
-            UpdateBoostVfx();
+            _isGrounded = CheckGround();
         }
 
-        private void LateUpdate()
+        private void FixedUpdate()
         {
-            // Animatorによる子オブジェクトの回転をリセット
-            animator.transform.localRotation = Quaternion.identity;
+            UpdateBoostVfx(false);
+
+            if (_isGrounded)
+            {
+                if (_moveInput.y > 0.5f)
+                {
+                    _rb.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0f, GetTargetAngle(), 0f), Time.deltaTime * 10f);
+                    _rb.linearVelocity = GetMoveDirection() * speed;
+                }
+                else
+                {
+                    _rb.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0f, GetCameraDirection(), 0f), Time.deltaTime * 5f);
+                    _rb.linearVelocity = GetMoveDirection() * speed * 0.85f;
+                }
+
+                if (_wireReelPressed)
+                {
+                    Jump();
+                }
+            }
+            else
+            {
+                _rb.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0f, GetCameraDirection(), 0f), Time.deltaTime * 10f);
+                InAirMovement();
+            }
+
+            if (_isUsingGas && !_oldIsUsingGas)
+            {
+                SetGasTargetPosition();
+            }
+            if (_isUsingGas)
+            {
+                GasMovement();
+            }
+            if (!_isUsingGas && _oldIsUsingGas)
+            {
+                ResetGasTargetPosition();
+            }
+
+            _oldIsUsingGas = _isUsingGas;
         }
     }
 }

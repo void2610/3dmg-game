@@ -210,8 +210,8 @@ GameObject:
   - component: {fileID: 330585545}
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
-  - component: {fileID: 330585549}
   - component: {fileID: 330585548}
+  - component: {fileID: 330585549}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -376,14 +376,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 330585543}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0510273129d3b4666aa7d4e25d08e5c1, type: 3}
+  m_Script: {fileID: 11500000, guid: 8b7b8d29950c24d90b427d0c3d8ae45c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  height: 2
+  height: 1.5
   baseDistance: 4
   minDistance: 1
   maxDistance: 10
-  sensitivity: 0.3
+  sensitivity: 2
   minVerticalAngle: -40
   maxVerticalAngle: 70
   collisionRadius: 0.3
@@ -391,13 +391,12 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   maxSpeedDistance: 8
-  speedForMaxDistance: 50
+  speedForMaxDistance: 30
   distanceSmoothTime: 0.3
   baseFov: 60
   maxSpeedFov: 80
   fovSmoothTime: 0.2
   player: {fileID: 1291460913}
-  grapplingHook: {fileID: 1291460910}
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -847,6 +846,8 @@ MonoBehaviour:
     TypeName: 
   autoRun: 1
   autoInjectGameObjects: []
+  scopeName: 
+  <Parent>k__BackingField: {fileID: 0}
 --- !u!4 &1071906409
 Transform:
   m_ObjectHideFlags: 0
@@ -970,17 +971,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 949589856}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1291460910 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1142507460002083147, guid: c5343346698324990843a8b15703746d, type: 3}
-  m_PrefabInstance: {fileID: 7264307875083269847}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8df2d22c2ca3641428cfff6505cbd32d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1291460913 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2424366087418422776, guid: c5343346698324990843a8b15703746d, type: 3}
@@ -989,7 +979,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1488458ce05724799a13a0aa7827132d, type: 3}
+  m_Script: {fileID: 11500000, guid: c38c0e1a68107482aa4bf9ee84eaaf0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &1362331010
@@ -1507,6 +1497,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1142507460002083147, guid: c5343346698324990843a8b15703746d, type: 3}
+      propertyPath: gasForce
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1142507460002083147, guid: c5343346698324990843a8b15703746d, type: 3}
+      propertyPath: gasReelSpeed
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 1802792911974407395, guid: c5343346698324990843a8b15703746d, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -1547,10 +1545,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2424366087418422776, guid: c5343346698324990843a8b15703746d, type: 3}
+      propertyPath: camera
+      value: 
+      objectReference: {fileID: 330585543}
     - target: {fileID: 6916062199634734234, guid: c5343346698324990843a8b15703746d, type: 3}
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 7242507741520157724, guid: c5343346698324990843a8b15703746d, type: 3}
+      propertyPath: m_Actions
+      value: 
+      objectReference: {fileID: -944628639613478452, guid: fd661f3f5bb3e4b62b763123e7d9a6c1, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
