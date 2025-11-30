@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.VFX;
@@ -77,22 +78,10 @@ namespace Player
             return GetCameraDirection();
         }
 
-        private RaycastHit? RaycastIgnoreTriggers(Vector3 origin, Vector3 direction, float distance)
-        {
-            var hits = Physics.RaycastAll(origin, direction, distance);
-            foreach (var hit in hits)
-            {
-                if (!hit.collider.isTrigger)
-                {
-                    return hit;
-                }
-            }
-            return null;
-        }
-
         private bool CheckGround()
         {
-            return RaycastIgnoreTriggers(transform.position, -transform.up, 1.1f).HasValue;
+            return Physics.RaycastAll(transform.position + Vector3.up, Vector3.down, 1.5f)
+                .Any(hit => !hit.collider.isTrigger);
         }
 
         private Vector3 GetMoveDirection()
