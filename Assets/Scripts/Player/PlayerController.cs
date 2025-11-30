@@ -263,12 +263,14 @@ namespace Player
                 if (_moveInput.y > 0.5f)
                 {
                     _rb.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0f, GetTargetAngle(), 0f), Time.deltaTime * 10f);
-                    _rb.linearVelocity = GetMoveDirection() * speed;
+                    var moveVelocity = GetMoveDirection() * speed;
+                    _rb.linearVelocity = new Vector3(moveVelocity.x, _rb.linearVelocity.y, moveVelocity.z);
                 }
                 else
                 {
                     _rb.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0f, GetCameraDirection(), 0f), Time.deltaTime * 5f);
-                    _rb.linearVelocity = GetMoveDirection() * speed * 0.85f;
+                    var moveVelocity = GetMoveDirection() * (speed * 0.85f);
+                    _rb.linearVelocity = new Vector3(moveVelocity.x, _rb.linearVelocity.y, moveVelocity.z);
                 }
 
                 if (_wireReelPressed)
