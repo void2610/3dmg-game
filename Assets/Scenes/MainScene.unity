@@ -1497,14 +1497,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 1142507460002083147, guid: c5343346698324990843a8b15703746d, type: 3}
-      propertyPath: gasForce
-      value: 0.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1142507460002083147, guid: c5343346698324990843a8b15703746d, type: 3}
-      propertyPath: gasReelSpeed
-      value: 10
-      objectReference: {fileID: 0}
     - target: {fileID: 1802792911974407395, guid: c5343346698324990843a8b15703746d, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -1545,18 +1537,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 2424366087418422776, guid: c5343346698324990843a8b15703746d, type: 3}
-      propertyPath: camera
-      value: 
-      objectReference: {fileID: 330585543}
     - target: {fileID: 6916062199634734234, guid: c5343346698324990843a8b15703746d, type: 3}
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
-    - target: {fileID: 7242507741520157724, guid: c5343346698324990843a8b15703746d, type: 3}
-      propertyPath: m_Actions
-      value: 
-      objectReference: {fileID: -944628639613478452, guid: fd661f3f5bb3e4b62b763123e7d9a6c1, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

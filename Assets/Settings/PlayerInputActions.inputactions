@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "name": "PlayerInputActions",
     "maps": [
         {
@@ -54,7 +55,7 @@
                     "name": "Boost",
                     "type": "Value",
                     "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
@@ -151,7 +152,7 @@
                 },
                 {
                     "name": "",
-                    "id": "77777777-7777-7777-7777-777777777701",
+                    "id": "77777777-7777-7777-7777-77777777aa01",
                     "path": "<Keyboard>/q",
                     "interactions": "",
                     "processors": "",
@@ -162,7 +163,7 @@
                 },
                 {
                     "name": "",
-                    "id": "88888888-8888-8888-8888-888888888801",
+                    "id": "88888888-8888-8888-8888-88888888aa01",
                     "path": "<Keyboard>/e",
                     "interactions": "",
                     "processors": "",
@@ -173,7 +174,7 @@
                 },
                 {
                     "name": "",
-                    "id": "99999999-9999-9999-9999-999999999901",
+                    "id": "99999999-9999-9999-9999-99999999aa01",
                     "path": "<Keyboard>/space",
                     "interactions": "",
                     "processors": "",
@@ -184,7 +185,7 @@
                 },
                 {
                     "name": "",
-                    "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa01",
+                    "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaa01",
                     "path": "<Keyboard>/leftShift",
                     "interactions": "",
                     "processors": "",
